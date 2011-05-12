@@ -130,7 +130,7 @@ class CouchShelf(UserDict.DictMixin):
     def __assertValidState(self, operationtype):
         if self._db == None:
             raise ValueError
-        if self._flag == 'r' and action == self.__MODIFYING_OPERATION:
+        if self._flag == 'r' and operationtype == self.__MODIFYING_OPERATION:
             raise ValueError
 
     def __getitem__(self, key):
@@ -187,7 +187,7 @@ class CouchShelf(UserDict.DictMixin):
 
     def keys(self):
         self.__assertValidState(self.__NM_OP)
-        return self._db.list()
+        return self._db.all_ids()
 
     def values(self):
         self.__assertValidState(self.__NM_OP)
@@ -197,7 +197,13 @@ class CouchShelf(UserDict.DictMixin):
 
         values = []
         for key in self.keys():
-            values.append(self[key])
+            try:
+                values.append(self[key])
+            except KeyError:
+               try:
+                   del self._cache[key]
+               except KeyError:
+                   pass
         return tuple(values)
 
     def items(self):
@@ -208,7 +214,13 @@ class CouchShelf(UserDict.DictMixin):
 
         items = []
         for key in self.keys():
-            items.append((key, self[key]))
+            try:
+                items.append((key, self[key]))
+            except KeyError:
+               try:
+                   del self._cache[key]
+               except KeyError:
+                   pass
         return tuple(items)
 
     def iteritems(self):
@@ -218,7 +230,13 @@ class CouchShelf(UserDict.DictMixin):
             raise ValueError
 
         for key in self.keys():
-            yield (key, self[key])
+            try:
+                yield (key, self[key])
+            except KeyError:
+               try:
+                   del self._cache[key]
+               except KeyError:
+                   pass
 
     def sync(self):
         if self._db == None:

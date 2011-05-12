@@ -6,6 +6,7 @@ from couchquery import shelve
 import couchquery
 import unittest
 import pickle
+from threading import Thread
 
 URI = 'http://localhost:5984/shelve'
 
@@ -119,6 +120,56 @@ class TestCouchShelve(unittest.TestCase):
 
         d.close()
 
+    def _test_concurrency(self, func, times=100):
+        """
+            Update database during calls to items(), values(),
+            keys(), itemitems() in an attempt to elicit (inappropriate)
+            concurrency related exceptions.
+        """
+        # FIXME: Not truly concurrent viz GIL
+        class Worker(Thread):
+           def __init__(self, uri):
+              Thread.__init__(self)
+              self.db = shelve.open(uri)
+              self._halt = False
+
+           def run(self):
+              i = 100
+              while not self._halt:
+                 self.db[str(i)] = "data"
+                 del self.db[str(i - 100)]
+                 i += 1
+
+              self.db.close()
+
+           def halt(self):
+              self._halt = True
+
+        d = shelve.open(URI)
+        for i in xrange(100):
+            d[str(i)] = "data"
+        d.sync()
+
+        w = Worker(URI)
+        w.start()
+        try:
+            for i in xrange(times):
+                sorted( getattr(d, func)())
+        finally:
+            w.halt()
+            w.join()
+
+    def test_concurrency_keys(self):
+        self._test_concurrency("keys")
+
+    def test_concurrency_items(self):
+        self._test_concurrency("items")
+
+    def test_concurrency_values(self):
+        self._test_concurrency("values")
+
+    def test_concurrency_iteritems(self):
+        self._test_concurrency("iteritems")
+
 if __name__ == '__main__':
     unittest.main()
-
