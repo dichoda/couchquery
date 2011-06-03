@@ -13,7 +13,7 @@ import time
 this_dir = os.path.abspath(os.path.dirname(__file__))
 design_doc = os.path.join(this_dir, 'views')
 
-URL='http://admin:midas@localhost:5984/couchquery_unittest'
+URL='http://localhost:5984/couchquery_unittest'
 
 
 class StatCache(object):
