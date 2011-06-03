@@ -41,6 +41,22 @@ content_type_table = {'js': 'application/x-javascript', 'html': 'text/html; char
                       'rss': 'application/rss+xml; charset=utf-8',
                       'ics': 'text/calendar; charset=utf-8'}
 
+
+class NoopHttpCache(object):
+    """
+       Implements the httplib2.FileCache 'interface', but
+       cache will always 'miss'.
+    """
+
+    def get(self, key):
+        return None
+
+    def set(self, key, value):
+        pass
+
+    def delete(self, key):
+        pass
+
 class HttpResponse(object):
     pass
 
@@ -78,7 +94,9 @@ class Httplib2Client(HttpClient):
                 user, password = self.uri.replace('http://','').split('@')[0].split(':')
                 self.uri = 'http://'+self.uri.split('@')[1]
                 if cache is None:
-                    cache = '.cache'
+                    # create noop cache.  no need to use
+                    # file cache on local system, plus no cleanup
+                    cache = NoopHttpCache()
                 self.http = httplib2.Http(cache)
                 self.http.add_credentials(user, password)
             else:

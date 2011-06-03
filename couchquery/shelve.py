@@ -103,6 +103,21 @@ except ImportError:
 class ConflictError(StandardError):
     pass
 
+class NoopHttpCache(object):
+    """
+       Implements the httplib2.FileCache 'interface', but
+       cache will always 'miss'.
+    """
+
+    def get(self, key):
+        return None
+
+    def set(self, key, value):
+        pass
+
+    def delete(self, key):
+        pass
+
 class CouchShelf(UserDict.DictMixin):
     """A 'shelf' implemented using couchdb as a backend
     
@@ -115,8 +130,8 @@ class CouchShelf(UserDict.DictMixin):
     __M_OP = __MODIFYING_OPERATION
     __NM_OP = __NON_MODIFYING_OPERATION
 
-    def __init__(self, uri, flag='c', writeback=False, raiseconflicts=False):
-        self._db = couchquery.Database(uri)
+    def __init__(self, uri, flag='c', writeback=False, raiseconflicts=False, http_cache=None):
+        self._db = couchquery.Database(uri, cache=http_cache)
         if flag == 'n':
             couchquery.deletedb(self._db)
         if flag in ('n', 'c'):
